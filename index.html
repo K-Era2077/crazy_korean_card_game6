@@ -441,6 +441,9 @@
         let deck = [];
         let streak = 0;
         
+        // ** 중복 출제 방지 변수 **
+        let lastWordIdx = -1;
+        
         // 목표 점수 설정: 100, 200, 300
         const MILESTONES = [100, 200, 300];
         let nextMilestoneIdx = 0;
@@ -476,7 +479,20 @@
 
         function getNextWord() {
             if (deck.length === 0) rebuildDeck();
+            
+            // ** 연속 출제 방지 로직 **
+            // 덱에서 꺼낼 예정인 카드(마지막 요소)가 직전 문제(lastWordIdx)와 같다면
+            // 그 앞의 카드와 순서를 바꿈 (덱에 카드가 2장 이상일 때만 가능)
+            if (deck.length > 1) {
+                const nextIdx = deck[deck.length - 1];
+                if (nextIdx === lastWordIdx) {
+                    // swap
+                    [deck[deck.length - 1], deck[deck.length - 2]] = [deck[deck.length - 2], deck[deck.length - 1]];
+                }
+            }
+            
             const idx = deck.pop();
+            lastWordIdx = idx; // 이번 문제 인덱스 저장
             return WORDS_ALL[idx];
         }
 
@@ -639,6 +655,7 @@
                 streak = 0;
                 questionCount = 1;
                 nextMilestoneIdx = 0;
+                lastWordIdx = -1; // 리셋 시 이전 단어 기록도 초기화
                 scoreEl.textContent = "0";
                 qNumEl.textContent = "1";
                 rebuildDeck();
