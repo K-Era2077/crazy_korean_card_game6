@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서울대 한국어 4A - 6과 단어 게임</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f0fdf4; /* 6과 테마: 상쾌한 그린/블루 톤 */
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .game-container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 600px;
+            padding: 25px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            min-height: 100vh;
+        }
+        @media (min-width: 600px) {
+            .game-container {
+                min-height: auto;
+                margin: 30px 0;
+                border-radius: 24px;
+                border: 1px solid #e5e7eb;
+            }
+        }
+        
+        /* Header */
+        h1 { font-size: 1.5rem; text-align: center; margin: 5px 0 5px; color: #166534; letter-spacing: -0.5px; }
+        .subtitle { text-align: center; font-size: 0.95rem; color: #6b7280; margin-bottom: 25px; }
+        
+        /* Controls */
+        .top-ctrl { 
+            display: flex; 
+            justify-content: center; 
+            gap: 20px; 
+            margin-bottom: 20px; 
+            background: #f3f4f6;
+            padding: 12px;
+            border-radius: 16px;
+        }
+        .direction-label { 
+            font-weight: 700; 
+            font-size: 1rem; 
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .direction-label:hover { opacity: 0.7; }
+
+        /* Stats */
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 12px; 
+            margin-bottom: 20px; 
+        }
+        .stat-box {
+            background: #fff;
+            border: 2px solid #f3f4f6;
+            border-radius: 16px;
+            padding: 12px 5px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .stat-label { font-size: 0.8rem; color: #9ca3af; margin-bottom: 4px; font-weight: 600; }
+        .stat-value { font-size: 1.4rem; font-weight: 800; color: #1f2937; }
+        .stat-value.score { color: #16a34a; } /* Green for score */
+        
+        /* Question Card */
+        .card { 
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); 
+            border-radius: 20px; 
+            padding: 40px 20px; 
+            margin-bottom: 25px; 
+            text-align: center; 
+            box-shadow: inset 0 2px 4px 0 rgba(255, 255, 255, 0.5);
+            border: 1px solid #a7f3d0;
+            position: relative;
+            overflow: hidden;
+        }
+        .question-text { 
+            font-size: 2.2rem; 
+            font-weight: 800; 
+            color: #064e3b; 
+            margin-bottom: 10px; 
+            word-break: keep-all; 
+            line-height: 1.2; 
+            position: relative;
+            z-index: 2;
+        }
+        .lang-hint { 
+            font-size: 0.9rem; 
+            color: #059669; 
+            font-weight: 700; 
+            letter-spacing: 1px; 
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 2;
+        }
+        /* Decorative circle behind text */
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px; height: 150px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        /* Options Grid */
+        #options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .option-btn {
+            padding: 15px 10px; 
+            font-size: 1.15rem; 
+            border-radius: 16px;
+            border: 2px solid #e5e7eb; 
+            background: #ffffff; 
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); 
+            word-break: keep-all; 
+            min-height: 80px;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-weight: 600;
+            box-shadow: 0 2px 0 #e5e7eb;
+            line-height: 1.3;
+        }
+        .option-btn:hover:not(:disabled) { 
+            border-color: #34d399; 
+            background: #f0fdf4; 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 0 #34d399;
+        }
+        .option-btn:active:not(:disabled) { 
+            transform: translateY(0); 
+            box-shadow: 0 0 0; 
+        }
+        
+        .option-btn.correct { 
+            background: #dcfce7 !important; 
+            border-color: #22c55e !important; 
+            color: #14532d !important; 
+            box-shadow: 0 0 0 2px #bbf7d0 !important; 
+        }
+        .option-btn.wrong { 
+            background: #fee2e2 !important; 
+            border-color: #ef4444 !important; 
+            color: #7f1d1d !important; 
+            opacity: 0.6;
+            box-shadow: none !important;
+        }
+
+        /* Next Button */
+        #next-btn {
+            width: 100%; padding: 18px; font-size: 1.2rem;
+            background: #10b981; color: white; border: none; border-radius: 16px;
+            cursor: pointer; font-weight: 800;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 #059669;
+            margin-top: 10px;
+        }
+        #next-btn:disabled { 
+            background: #d1d5db; 
+            color: #9ca3af;
+            cursor: not-allowed; 
+            box-shadow: none; 
+            transform: translateY(2px);
+        }
+        #next-btn:hover:not(:disabled) { background: #059669; transform: translateY(-2px); box-shadow: 0 6px 0 #047857; }
+        #next-btn:active:not(:disabled) { transform: translateY(0); box-shadow: 0 0 0; }
+
+        /* Message Area */
+        #message {
+            text-align: center; 
+            min-height: 30px; 
+            font-weight: 700; 
+            margin: 10px 0;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Celebration Overlay */
+        .overlay { 
+            position: fixed; inset: 0; 
+            background: rgba(0,0,0,0.7); 
+            backdrop-filter: blur(5px);
+            display: none; 
+            align-items: center; justify-content: center; 
+            z-index: 100; 
+            padding: 20px;
+        }
+        .overlay.show { display: flex; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .celebrate-card { 
+            background: white; 
+            padding: 40px 30px; 
+            border-radius: 30px; 
+            text-align: center; 
+            max-width: 400px; 
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            transform: scale(0.9);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popIn { to { transform: scale(1); } }
+
+        .confetti { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 1; }
+        .confetti span {
+            position: absolute; width: 10px; height: 10px; 
+            animation: fall 3s linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
+        .celebrate-btn {
+            margin-top: 25px;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 800;
+            background: #4f46e5;
+            color: white;
+            width: 100%;
+            box-shadow: 0 4px 0 #3730a3;
+            transition: transform 0.1s;
+        }
+        .celebrate-btn:active { transform: translateY(4px); box-shadow: none; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>서울대 한국어 4A - 6과</h1>
+        <div class="subtitle">공연과 축제 어휘 (총 <span id="total-words">0</span>단어)</div>
+
+        <div class="top-ctrl">
+            <label class="direction-label">
+                <input type="radio" name="direction" value="vi2ko" checked> 
+                🇻🇳 베트남어 → 🇰🇷 한국어
+            </label>
+            <label class="direction-label">
+                <input type="radio" name="direction" value="ko2vi"> 
+                🇰🇷 한국어 → 🇻🇳 베트남어
+            </label>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <span class="stat-label">진행</span>
+                <span class="stat-value"><span id="q-num">1</span></span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">남은 단어</span>
+                <span class="stat-value" id="words-left">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">점수</span>
+                <span class="stat-value score" id="current-score">0</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="lang-hint" id="lang-label">Ready?</div>
+            <div class="question-text" id="q-text">시작!</div>
+        </div>
+
+        <div id="options"></div>
+        <div id="message"></div>
+        <button id="next-btn" disabled>다음 문제</button>
+    </div>
+
+    <!-- Celebration Overlay -->
+    <div class="overlay" id="overlay">
+        <div class="confetti" id="confetti-container"></div>
+        <div class="celebrate-card">
+            <div style="font-size: 3rem; margin-bottom: 10px;">🏆</div>
+            <h2 style="font-size: 2rem; margin: 0 0 10px; color: #10b981;" id="cel-title">축하합니다!</h2>
+            <p style="font-size: 1.2rem; color: #4b5563; line-height: 1.6;" id="cel-body">목표 점수를 달성하셨습니다!</p>
+            <button class="celebrate-btn" id="cel-btn" onclick="handleContinue()">계속 하기</button>
+        </div>
+    </div>
+
+    <script>
+        // 6과 어휘 데이터 (한국어, 베트남어)
+        const WORDS_ALL = [
+            ["설명이 필요 없다", "không cần giải thích"], ["볼거리", "cái để xem"], 
+            ["이야깃거리", "câu chuyện"], ["웃음거리", "chuyện cười"], 
+            ["걱정거리", "mối lo"], ["관심거리", "mối quan tâm"], 
+            ["교포", "kiều bào"], ["발라드", "bản ballad"], 
+            ["대단하다", "giỏi, xuất sắc"], ["감동적이다", "cảm động"], 
+            ["지루하다", "chán"], ["신이 나다", "hứng thú"], 
+            ["가슴이 찡하다", "nghẹn ngào"], ["수준이 높다", "tiêu chuẩn cao"], 
+            ["기대만 못하다", "không đạt được kì vọng"], ["이해가 안 되다", "không hiểu"], 
+            ["댄스곡", "nhạc dance"], ["판매", "việc bán hàng"], 
+            ["근무지", "nơi làm việc"], ["장기 자랑", "cuộc thi tài năng"], 
+            ["힙합", "hip-hop"], ["탭 댄스", "nhảy thiết hài"], 
+            ["마술", "ma thuật"], ["민속 공연", "biểu diễn dân gian"], 
+            ["존경하다", "tôn trọng"], ["문자", "chữ"], 
+            ["대표하다", "đại diện"], ["예술품", "tác phẩm nghệ thuật"], 
+            ["신경 쓰다", "quan tâm"], ["하이서울페스티벌", "lễ hội Hi! Seoul Festival"], 
+            ["곳곳", "mọi nơi"], ["진행되다", "được tổ chức"], 
+            ["감상하다", "cảm thụ, thưởng thức"], ["잔치", "bữa tiệc"], 
+            ["화려하다", "rực rỡ"], ["불꽃놀이", "pháo hoa"], 
+            ["사물놀이", "samulnori"], ["연주팀", "đội biểu diễn"], 
+            ["국립국악단", "đoàn biểu diễn nghệ thuật truyền thống"], ["비보이", "B-boy"], 
+            ["한자리", "một chỗ"], ["어우러지다", "hòa hợp"], 
+            ["기회를 놓치다", "vuột mất cơ hội"], ["보령", "thành phố Boryeong"], 
+            ["머드 축제", "lễ hội bùn"], ["쏭크란", "lễ hội Songkran"], 
+            ["하얼빈", "Cáp Nhĩ Tân"], ["빙등제", "lễ hội băng"], 
+            ["삼바", "điệu nhảy Samba"], ["충남", "Chungnam"], 
+            ["대천", "Daecheon"], ["해수욕장", "bãi biển"], 
+            ["펼쳐지다", "được trải ra"], ["국내외", "trong và ngoài nước"], 
+            ["관광객", "khách du lịch"], ["몰려들다", "dồn vào"], 
+            ["미끄럼틀", "cầu trượt"], ["유튜브", "Youtube"], 
+            ["체험 프로그램", "chương trình trải nghiệm"], ["요트", "thuyền yat"], 
+            ["반응", "sự phản ứng"], ["궁중 음악", "âm nhạc cung đình"], 
+            ["부채춤", "múa quạt"], ["인상적이다", "ấn tượng"], 
+            ["우아하다", "trang nhã"], ["춤동작", "động tác múa"], 
+            ["판소리", "Pansori"], ["정서", "tình cảm"], 
+            ["강강술래", "điệu múa vòng tròn"], ["K-팝", "K-pop"], 
+            ["공포 영화", "phim kinh dị"], ["멜로 영화", "phim tình cảm"], 
+            ["재즈", "nhạc jazz"], ["은근히", "một cách thầm lặng"], 
+            ["넘어가다", "vượt qua"], ["임", "người ấy"], 
+            ["리", "lí (đơn vị đo)"], ["발병", "sự phát bệnh"], 
+            ["왠지 모르게", "không hiểu vì sao"], ["민요", "dân ca"], 
+            ["지역", "khu vực"], ["경기", "Gyeonggi"], 
+            ["밀양", "Miryang"], ["진도", "đảo Jindo"], 
+            ["정선", "Jeongseon"], ["널리", "rộng rãi"], 
+            ["방식", "phương thức"], ["신선하다", "tươi"], 
+            ["새롭다", "mới"], ["유네스코", "UNESCO"], 
+            ["인류 무형 유산", "di sản văn hóa phi vật thể"], ["가사", "lời bài hát"], 
+            ["거지", "ăn xin"], ["억수 장마", "mưa như trút nước"], 
+            ["만수산", "núi Mansu"], ["문경 새재", "Mungyeong Saejae"], 
+            ["동지섣달", "tháng 11, 12 âm lịch"]
+        ];
+
+        document.getElementById("total-words").textContent = WORDS_ALL.length;
+
+        // --- 오디오 시스템 (Web Audio API) ---
+        // 별도의 파일 로딩 없이 브라우저에서 직접 소리를 합성합니다.
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playTone(freq, type, duration, startTime = 0, vol = 0.1) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startTime);
+            
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime + startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + startTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(audioCtx.currentTime + startTime);
+            osc.stop(audioCtx.currentTime + startTime + duration);
+        }
+
+        function playCorrectSound() {
+            // 딩-동 (High pitch)
+            playTone(880, 'sine', 0.6, 0); // A5
+            playTone(1108, 'sine', 0.8, 0.1); // C#6
+        }
+
+        function playComboSound() {
+            // 화려한 띠링~ (Major Arpeggio)
+            const now = 0;
+            playTone(880, 'triangle', 0.3, now);      // A5
+            playTone(1108, 'triangle', 0.3, now+0.08); // C#6
+            playTone(1318, 'triangle', 0.3, now+0.16); // E6
+            playTone(1760, 'triangle', 0.6, now+0.24); // A6
+        }
+
+        function playWrongSound() {
+            // 띡! (Low Buzz)
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.3);
+            
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function playFanfareSound() {
+            // 빠바밤~ (Fanfare Melody)
+            const now = 0;
+            const type = 'square';
+            const vol = 0.1;
+            // C G E C G C
+            playTone(523.25, type, 0.2, now, vol);     // C5
+            playTone(659.25, type, 0.2, now+0.15, vol); // E5
+            playTone(783.99, type, 0.2, now+0.30, vol); // G5
+            playTone(1046.50, type, 0.8, now+0.45, vol); // C6
+            
+            // Background harmony
+            setTimeout(() => {
+                playTone(523.25, 'sine', 1.0, 0, 0.05);
+                playTone(783.99, 'sine', 1.0, 0, 0.05);
+            }, 0);
+        }
+
+        // --- 게임 로직 ---
+        let score = 0;
+        let questionCount = 1;
+        let direction = "vi2ko";
+        let deck = [];
+        let streak = 0;
+        
+        // 목표 점수 설정: 100, 200, 300
+        const MILESTONES = [100, 200, 300];
+        let nextMilestoneIdx = 0;
+
+        // 요소 참조
+        const qText = document.getElementById("q-text");
+        const langLabel = document.getElementById("lang-label");
+        const optionsDiv = document.getElementById("options");
+        const nextBtn = document.getElementById("next-btn");
+        const scoreEl = document.getElementById("current-score");
+        const qNumEl = document.getElementById("q-num");
+        const wordsLeftEl = document.getElementById("words-left");
+        const messageEl = document.getElementById("message");
+        
+        // 오버레이 요소
+        const overlay = document.getElementById("overlay");
+        const celTitle = document.getElementById("cel-title");
+        const celBody = document.getElementById("cel-body");
+        const celBtn = document.getElementById("cel-btn");
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function rebuildDeck() {
+            deck = Array.from({ length: WORDS_ALL.length }, (_, i) => i);
+            shuffle(deck);
+        }
+
+        function getNextWord() {
+            if (deck.length === 0) rebuildDeck();
+            const idx = deck.pop();
+            return WORDS_ALL[idx];
+        }
+
+        function updateStats() {
+            scoreEl.textContent = score;
+            qNumEl.textContent = questionCount;
+            wordsLeftEl.textContent = deck.length;
+        }
+
+        function newQuestion() {
+            nextBtn.disabled = true;
+            messageEl.textContent = "";
+
+            const correctWord = getNextWord(); // [Ko, Vi]
+            const q = direction === "vi2ko" ? correctWord[1] : correctWord[0]; // 질문 텍스트
+            const ans = direction === "vi2ko" ? correctWord[0] : correctWord[1]; // 정답 텍스트
+
+            langLabel.textContent = direction === "vi2ko" ? "Tiếng Việt" : "한국어";
+            qText.textContent = q;
+
+            // 오답 보기 생성
+            const pool = WORDS_ALL.map(w => direction === "vi2ko" ? w[0] : w[1])
+                                  .filter(v => v !== ans);
+            shuffle(pool);
+            let choices = [ans, pool[0], pool[1], pool[2]];
+            shuffle(choices);
+
+            optionsDiv.innerHTML = "";
+            choices.forEach(choice => {
+                const btn = document.createElement("button");
+                btn.className = "option-btn";
+                btn.textContent = choice;
+                btn.onclick = () => checkAnswer(choice, ans, btn);
+                optionsDiv.appendChild(btn);
+            });
+            
+            updateStats();
+        }
+
+        function createConfetti() {
+            const container = document.getElementById("confetti-container");
+            container.innerHTML = "";
+            const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+            
+            for (let i = 0; i < 80; i++) {
+                const span = document.createElement("span");
+                span.style.left = Math.random() * 100 + "%";
+                span.style.top = -10 + "px";
+                span.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                span.style.animationDelay = Math.random() * 2 + "s";
+                span.style.animationDuration = (2 + Math.random() * 2) + "s";
+                container.appendChild(span);
+            }
+        }
+
+        function showMilestone(milestone) {
+            playFanfareSound();
+            createConfetti();
+            overlay.classList.add("show");
+            
+            if (milestone === 300) {
+                celTitle.textContent = "🏆 전설의 등극! 300점! 🏆";
+                celTitle.style.color = "#f59e0b"; // Gold color
+                celBody.innerHTML = "와우! 300점을 달성하셨습니다.<br>당신은 진정한 단어 마스터입니다.";
+                celBtn.textContent = "처음부터 다시 하기";
+                celBtn.onclick = () => location.reload();
+            } else {
+                celTitle.textContent = `🎉 ${milestone}점 돌파! 🎉`;
+                celTitle.style.color = "#10b981";
+                celBody.textContent = `축하합니다! ${milestone}점에 도달하셨습니다.`;
+                celBtn.textContent = "계속 도전하기";
+                celBtn.onclick = handleContinue;
+            }
+        }
+
+        function handleContinue() {
+            overlay.classList.remove("show");
+            // 다음 문제로 바로 진행
+            questionCount++;
+            newQuestion();
+        }
+
+        function checkAnswer(selected, correct, btn) {
+            // 모든 버튼 비활성화 (중복 클릭 방지)
+            const allBtns = document.querySelectorAll(".option-btn");
+            allBtns.forEach(b => b.disabled = true);
+
+            if (selected === correct) {
+                // 점수 로직 (수정됨)
+                // streak: 이전 문제까지 연속 정답 횟수
+                // streak 0 -> 첫 정답 -> 1점
+                // streak 1 -> 두 번째 연속 정답 (2콤보) -> 2점
+                // streak 2 이상 -> 세 번째 이상 연속 정답 (3콤보) -> 3점 (최대)
+
+                let gained = 1;
+                let msgText = "";
+                let msgColor = "";
+
+                if (streak >= 2) {
+                    gained = 3;
+                    msgText = `🔥 3콤보 이상! +${gained}점!`;
+                    msgColor = "#b45309"; // 진한 주황/갈색
+                    playComboSound();
+                } else if (streak === 1) {
+                    gained = 2;
+                    msgText = `⚡ 2콤보! +${gained}점!`;
+                    msgColor = "#059669"; // 녹색
+                    playComboSound();
+                } else {
+                    gained = 1;
+                    msgText = `정답입니다! +${gained}점`;
+                    msgColor = "#166534"; // 짙은 녹색
+                    playCorrectSound();
+                }
+
+                score += gained;
+                streak += 1;
+                
+                btn.classList.add("correct");
+                messageEl.innerHTML = `<span style="color:${msgColor}; font-weight:bold;">${msgText}</span>`;
+                
+                updateStats();
+
+                // 마일스톤(100, 200, 300) 체크
+                // 현재 설정된 다음 목표가 있고, 점수가 그 목표를 넘었을 때
+                if (nextMilestoneIdx < MILESTONES.length && score >= MILESTONES[nextMilestoneIdx]) {
+                    const milestone = MILESTONES[nextMilestoneIdx];
+                    nextMilestoneIdx++; // 다음 목표로 인덱스 증가
+                    
+                    // 정답 확인 시간을 조금 준 뒤 축하 화면 표시
+                    setTimeout(() => {
+                        showMilestone(milestone);
+                    }, 500);
+                    return; // "다음 문제" 버튼 활성화 하지 않고 오버레이에서 처리
+                }
+
+            } else {
+                // 오답 로직
+                playWrongSound();
+                btn.classList.add("wrong");
+                streak = 0; // 연속 정답 초기화
+                messageEl.innerHTML = `<span style="color:#dc2626">틀렸습니다. 정답: <b>${correct}</b></span>`;
+            }
+
+            // 마일스톤이 아니면 다음 문제 버튼 활성화
+            nextBtn.disabled = false;
+        }
+
+        nextBtn.onclick = () => {
+            questionCount++;
+            newQuestion();
+        };
+
+        // 방향 전환 (한<->베)
+        document.querySelectorAll('input[name="direction"]').forEach(r => {
+            r.onchange = (e) => {
+                direction = e.target.value;
+                // 게임 리셋
+                score = 0;
+                streak = 0;
+                questionCount = 1;
+                nextMilestoneIdx = 0;
+                scoreEl.textContent = "0";
+                qNumEl.textContent = "1";
+                rebuildDeck();
+                newQuestion();
+            };
+        });
+
+        // 초기화
+        rebuildDeck();
+        newQuestion();
+
+    </script>
+</body>
+</html>
